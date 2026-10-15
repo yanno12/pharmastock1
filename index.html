@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PharmaStock</title>
+<style>
+:root{--bg:#fff;--soft:#f1f7f5;--ink:#0b2a4a;--muted:#4d6683;--line:#d3e0dd;--acc:#17894f;--acc-ink:#fff;
+--ok-bg:#dcf4e6;--ok:#0d6a38;--cf-bg:#fff0cf;--cf:#7a5200;--no-bg:#fde3e1;--no:#9c231d;--demo:#fff7d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1b2c;--soft:#13273d;--ink:#e6eef7;--muted:#9bb0c7;--line:#27405a;--acc:#43c487;--acc-ink:#06241a;--ok-bg:#12392a;--ok:#7fe0ac;--cf-bg:#3b2d0a;--cf:#f2c366;--no-bg:#421a18;--no:#ff9c94;--demo:#3a3410}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.25rem}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav button{background:none;border:2px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
+nav button[aria-current="true"]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+main{max-width:980px;margin:0 auto;padding:18px 16px 56px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 14px}h2{font-size:1.2rem;margin:26px 0 10px}
+.card{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+label{display:block;font-weight:700;font-size:.95rem;margin:0 0 10px}
+input,select{display:block;width:100%;margin-top:4px;font:inherit;padding:12px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input[type=checkbox]{display:inline-block;width:22px;height:22px;margin:0 8px 0 0;vertical-align:middle}
+.btn{display:block;width:100%;background:var(--acc);color:var(--acc-ink);border:0;border-radius:10px;padding:14px;font:inherit;font-weight:800;cursor:pointer;text-align:center;text-decoration:none}
+.btn.alt{background:none;color:var(--ink);border:2px solid var(--acc)}
+.btn.sm{display:inline-block;width:auto;padding:8px 14px;margin:2px 4px 2px 0}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.opt{display:block;width:100%;text-align:left;margin:0 0 8px;padding:12px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--acc);background:var(--ok-bg)}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-weight:800;font-size:.82rem}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-cf{background:var(--cf-bg);color:var(--cf)}.b-no{background:var(--no-bg);color:var(--no)}
+.tag{background:var(--demo);font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:6px}
+.meta{color:var(--muted);font-size:.92rem}
+.row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.stat{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px}.stat b{display:block;font-size:1.7rem}
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.acts .btn{flex:1;min-width:130px}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.92rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.err{background:var(--no-bg);color:var(--no);padding:10px 12px;border-radius:8px;margin-bottom:10px;font-weight:700}
+.good{background:var(--ok-bg);color:var(--ok);padding:10px 12px;border-radius:8px;margin-bottom:10px;font-weight:700}
+.warn{background:var(--cf-bg);color:var(--cf);padding:10px 12px;border-radius:8px;margin-bottom:10px}
+.inline{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;align-items:end}
+ul.al{margin:0;padding-left:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="#17894f"/><path d="M12 6h6v6h6v6h-6v6h-6v-6H6v-6h6z" fill="#fff"/></svg>PharmaStock</div>
+  <nav id="nav"></nav>
+</header>
+<main id="v"></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+var C=window.PHARMASTOCK||{},sb=null;
+var S={view:"find",user:null,prof:null,ph:null,msg:null,hoods:[],dir:[],fs:{q:"",hood:"",go:false,mid:null,vars:[],res:null},rid:null,d:null,adm:null,mf:{mid:"",type:"receipt",batch:"new",qty:"",reason:"",no:"",exp:"",cost:""}};
+var LBL={available:"DISPONIBLE",confirm:"CONFIRMER LA DISPONIBILITÉ",unavailable:"INDISPONIBLE"},CL={available:"ok",confirm:"cf",unavailable:"no"};
+var TYPES={receipt:"Entrée de stock",dispense:"Sortie / vente",damage:"Casse",return_to_supplier:"Retour fournisseur",expiry_writeoff:"Retrait périmé",adjustment:"Ajustement (±)"};
+var STATUS={pending:"En attente de vérification",verified:"Vérifiée",suspended:"Suspendue"};
+function esc(s){var e=document.createElement("div");e.textContent=s==null?"":s;return e.innerHTML}
+function $(i){return document.getElementById(i)}
+function ago(t){var h=Math.round((Date.now()-new Date(t))/36e5);return h<1?"à l'instant":h<48?"il y a "+h+" h":"il y a "+Math.floor(h/24)+" j"}
+function cfa(n){return Number(n).toLocaleString("fr-FR")+" F CFA"}
+function mname(m){return m.generic_name+(m.brand_name?" ("+m.brand_name+")":"")+" "+m.strength+", "+m.dosage_form}
+function say(k,t){S.msg={k:k,t:t};render()}
+function badge(s){return'<span class="badge b-'+CL[s]+'">'+LBL[s]+'</span>'}
+
+async function init(){
+  if(!C.SUPABASE_URL||!C.SUPABASE_ANON_KEY||!window.supabase){S.view="setup";render();return}
+  sb=supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY);
+  var r=await sb.auth.getSession();S.user=r.data.session?r.data.session.user:null;
+  sb.auth.onAuthStateChange(function(ev,ses){S.user=ses?ses.user:null});
+  var d=await sb.rpc("public_pharmacy_directory");
+  S.dir=d.data||[];S.hoods=S.dir.map(function(p){return p.neighborhood}).filter(function(x,i,a){return a.indexOf(x)===i}).sort();
+  render();
+}
+
+/* ---------- views ---------- */
+function vSetup(){return'<h1>Configuration requise</h1><div class="warn">PharmaStock n\'est pas encore connecté à une base de données. Ouvrez <b>config.js</b> et renseignez <b>SUPABASE_URL</b> et <b>SUPABASE_ANON_KEY</b> (la clé publique « anon », jamais la clé « service_role »). Voir README.md.</div>'}
+
+function vFind(){
+  var f=S.fs,h='<h1>Trouvez votre médicament près de chez vous</h1>';
+  if(S.msg)h+='<div class="'+S.msg.k+'">'+esc(S.msg.t)+'</div>';
+  h+='<form class="card" data-form="find"><label>Rechercher un médicament<input id="q" value="'+esc(f.q)+'" placeholder="Nom, marque, dosage ou forme" autocomplete="off"></label><label>Quartier<select id="hood"><option value="">Tous les quartiers</option>'+S.hoods.map(function(x){return'<option'+(f.hood===x?' selected':'')+'>'+esc(x)+'</option>'}).join("")+'</select></label><button class="btn" type="submit">Trouver un médicament</button><p class="meta" style="margin:8px 0 0">Recherche par quartier avec lien d\'itinéraire. La position GPS et la carte ne sont pas configurées.</p></form>';
+  if(f.go){
+    if(!f.vars.length)h+='<div class="card">Aucun médicament trouvé.</div>';
+    else h+='<h2>Choisissez la dose et la forme exactes</h2><p class="meta">Les disponibilités s\'affichent après ce choix.</p>'+f.vars.map(function(m){return'<button class="opt" data-act="pick" data-mid="'+m.id+'" aria-pressed="'+(f.mid===m.id)+'"><b>'+esc(m.generic_name)+'</b>'+(m.brand_name?' ('+esc(m.brand_name)+')':'')+'<br>'+esc(m.strength)+' · '+esc(m.dosage_form)+'</button>'}).join("");
+    if(f.res){
+      h+='<h2>Résultats</h2>';
+      if(!f.res.length)h+='<div class="card">Aucune pharmacie participante ne publie ce médicament dans ce quartier.</div>';
+      f.res.forEach(function(p){
+        var q=p.latitude!=null?p.latitude+","+p.longitude:p.address+", Lomé";
+        h+='<div class="card"><b>'+esc(p.pharmacy_name)+'</b>'+(p.is_demo?'<span class="tag">DÉMO</span>':'')+'<br>'+badge(p.availability)+'<p class="meta" style="margin:6px 0">'+esc(p.address)+' ('+esc(p.neighborhood)+')<br>'+esc(p.opening_hours)+'<br>Dernière vérification du stock : '+ago(p.last_verified_at)+(p.price_xof!=null?'<br>Prix indicatif : '+cfa(p.price_xof):'')+(p.eligible_quantity!=null?'<br>Quantité déclarée : '+p.eligible_quantity:'')+'</p>';
+        if(p.availability==="confirm")h+='<p style="margin:0 0 6px"><b>Information ancienne :</b> appelez avant de vous déplacer.</p>';
+        h+='<div class="acts">'+(p.phone?'<a class="btn" href="tel:'+esc(p.phone.replace(/\s/g,""))+'">Appeler '+esc(p.phone)+'</a>':'')+'<a class="btn alt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+'">Itinéraire</a></div></div>';
+      });
+    }
+  }
+  h+='<h2>Comment ça marche</h2><ol><li>Cherchez un médicament et choisissez sa dose et sa forme exactes.</li><li>Voyez quelles pharmacies participantes déclarent du stock valide, et depuis quand.</li><li>Appelez la pharmacie avant de vous déplacer.</li></ol><h2>Annuaire des pharmacies</h2>';
+  h+=S.dir.length?S.dir.map(function(p){return'<div class="card"><b>'+esc(p.name)+'</b>'+(p.is_demo?'<span class="tag">DÉMO</span>':'')+'<br><span class="meta">'+esc(p.address)+'<br>'+esc(p.opening_hours)+(p.phone?' · '+esc(p.phone):'')+'</span></div>'}).join(""):'<div class="card meta">Aucune pharmacie n\'est encore publiée.</div>';
+  return h+'<button class="btn alt" data-act="register">Inscrire ma pharmacie</button>';
+}
+
+function vAuth(){
+  var h='<h1>Espace pharmacie</h1>';
+  if(S.msg)h+='<div class="'+S.msg.k+'">'+esc(S.msg.t)+'</div>';
+  return h+'<form class="card" data-form="auth"><label>E-mail<input id="em" type="email" required autocomplete="email"></label><label>Mot de passe (8 caractères minimum)<input id="pw" type="password" minlength="8" required autocomplete="current-password"></label><div class="acts"><button class="btn" type="submit" data-m="in">Se connecter</button><button class="btn alt" type="submit" data-m="up">Créer un compte</button></div></form><p class="meta">Pour inscrire une nouvelle pharmacie : créez d\'abord un compte, puis remplissez le formulaire d\'inscription.</p>';
+}
+
+function vReg(){
+  var t=C.TERMS_URL?'<a href="'+esc(C.TERMS_URL)+'" target="_blank" rel="noopener">conditions d\'utilisation</a>':'conditions d\'utilisation',p=C.PRIVACY_URL?'<a href="'+esc(C.PRIVACY_URL)+'" target="_blank" rel="noopener">politique de confidentialité</a>':'politique de confidentialité';
+  var h='<h1>Inscription d\'une pharmacie</h1>';
+  if(S.msg)h+='<div class="'+S.msg.k+'">'+esc(S.msg.t)+'</div>';
+  if(!C.TERMS_URL||!C.PRIVACY_URL)h+='<div class="warn">Les textes légaux ne sont pas configurés (TERMS_URL, PRIVACY_URL dans config.js). Ne lancez pas le service sans eux.</div>';
+  return h+'<form class="card" data-form="reg"><label>Votre nom complet<input name="full" required></label><label>Nom officiel de la pharmacie<input name="name" required></label><label>Adresse<input name="addr" required></label><label>Quartier<input name="hood" required></label><label>Téléphone<input name="tel" type="tel" required></label><label>E-mail de la pharmacie<input name="mail" type="email" required></label><label>Horaires d\'ouverture<input name="hrs" required></label><label>Autorisation professionnelle (numéro et autorité)<input name="auth" required></label><label style="font-weight:400"><input name="ok" type="checkbox" required>J\'accepte les '+t+' et la '+p+'.</label><button class="btn" type="submit">Envoyer la demande</button><p class="meta">Votre pharmacie sera vérifiée par un administrateur avant toute publication.</p></form>';
+}
+
+function vPro(){
+  var d=S.d;if(!d)return'<p>Chargement…</p>';
+  var mgr=S.prof.role==="manager",p=S.ph,h='<h1>'+esc(p.name)+'</h1>';
+  if(S.msg)h+='<div class="'+S.msg.k+'">'+esc(S.msg.t)+'</div>';
+  h+='<p><span class="badge b-'+(p.status==="verified"?"ok":"cf")+'">'+STATUS[p.status]+'</span> '+(p.listing_enabled?'<span class="badge b-ok">PUBLIÉE</span>':'<span class="badge b-no">NON PUBLIÉE</span>')+'</p>';
+  if(p.status!=="verified")h+='<div class="warn">Votre pharmacie n\'est pas encore vérifiée : vous pouvez gérer votre stock, mais rien n\'est visible du public.</div>';
+  var low=d.stock.filter(function(x){return x.eligible_qty>0&&x.eligible_qty<=x.min_stock}).length,zero=d.stock.filter(function(x){return x.eligible_qty===0}).length,near=d.alerts.filter(function(a){return a.alert_type==="expiring_soon"}).length;
+  h+='<div class="row"><div class="stat"><b>'+d.stock.length+'</b>produits</div><div class="stat"><b>'+low+'</b>stock bas</div><div class="stat"><b>'+zero+'</b>en rupture</div><div class="stat"><b>'+near+'</b>lots bientôt périmés</div></div>';
+  h+='<div class="acts"><button class="btn sm" data-act="confirmall">Confirmer que mon stock est à jour</button><button class="btn sm alt" data-act="csv">Exporter l\'inventaire (CSV)</button>'+(mgr&&p.status==="verified"?'<button class="btn sm alt" data-act="plist" data-on="'+(!p.listing_enabled)+'">'+(p.listing_enabled?'Retirer ma pharmacie de la recherche':'Publier ma pharmacie')+'</button>':'')+'</div>';
+  h+='<h2>Alertes</h2><div class="card">'+(d.alerts.length?'<ul class="al">'+d.alerts.map(function(a){var m=d.meds.find(function(x){return x.id===a.medicine_id});return'<li>'+(m?esc(mname(m))+' : ':'')+esc(a.detail)+'</li>'}).join(""):"Aucune alerte.")+'</ul></div>';
+  var f=S.mf,mb=d.batches.filter(function(b){return b.medicine_id===f.mid});
+  h+='<h2>Enregistrer un mouvement</h2><form class="card" data-form="move"><label>Produit<select data-sel="mid"><option value="">Choisir…</option>'+d.meds.map(function(m){return'<option value="'+m.id+'"'+(f.mid===m.id?' selected':'')+'>'+esc(mname(m))+(m.approved?'':' (non approuvé)')+'</option>'}).join("")+'</select></label><label>Type<select data-sel="type">'+Object.keys(TYPES).map(function(k){return'<option value="'+k+'"'+(f.type===k?' selected':'')+'>'+TYPES[k]+'</option>'}).join("")+'</select></label>';
+  h+='<label>Lot<select data-sel="batch">'+(f.type==="receipt"?'<option value="new"'+(f.batch==="new"?' selected':'')+'>Nouveau lot</option>':'')+mb.map(function(b){return'<option value="'+b.id+'"'+(f.batch===b.id?' selected':'')+'>'+esc(b.batch_number)+' (qté '+b.quantity_on_hand+', péremption '+b.expiry_date+')</option>'}).join("")+'</select></label>';
+  if(f.type==="receipt"&&f.batch==="new")h+='<div class="inline"><label>N° de lot<input data-f="no" value="'+esc(f.no)+'"></label><label>Date de péremption<input type="date" data-f="exp" value="'+esc(f.exp)+'"></label><label>Coût unitaire (F CFA)<input type="number" min="0" data-f="cost" value="'+esc(f.cost)+'"></label></div>';
+  h+='<label>Quantité'+(f.type==="adjustment"?' (négative pour retirer)':'')+'<input type="number" inputmode="numeric" data-f="qty" value="'+esc(f.qty)+'"></label>';
+  if(f.type!=="receipt"&&f.type!=="dispense")h+='<label>Motif (obligatoire)<input data-f="reason" value="'+esc(f.reason)+'"></label>';
+  h+='<button class="btn" type="submit">Enregistrer</button></form>';
+  h+='<h2>Inventaire</h2>'+(d.stock.length?d.stock.map(function(x){
+    var pp=d.prod.find(function(y){return y.medicine_id===x.medicine_id})||{};
+    return'<div class="card" data-row="'+x.medicine_id+'"><b>'+esc(mname(x))+'</b><br>Stock éligible : <b>'+x.eligible_qty+'</b>'+(x.expired_qty?' · <span class="badge b-no">'+x.expired_qty+' périmées (exclues)</span>':'')+'<br><span class="meta">Prochaine péremption : '+(x.next_expiry||"–")+' · vérifié '+ago(x.last_verified_at)+'</span><div class="inline" style="margin-top:8px"><label>Seuil minimum<input type="number" min="0" data-k="min" value="'+x.min_stock+'"></label>'+(mgr?'<label>Prix public (F CFA)<input type="number" min="0" data-k="price" value="'+(pp.price_xof==null?"":pp.price_xof)+'"></label>':'')+'</div>'+(mgr?'<label style="font-weight:400;margin:6px 0 0"><input type="checkbox" data-k="pub"'+(x.public_listing?' checked':'')+'>Publier ce produit</label><label style="font-weight:400;margin:6px 0 0"><input type="checkbox" data-k="qty"'+(pp.show_quantity?' checked':'')+'>Afficher la quantité au public</label>':'')+'<button class="btn sm alt" data-act="saverow" data-mid="'+x.medicine_id+'" style="margin-top:8px">Enregistrer ces réglages</button></div>'}).join(""):'<div class="card">Aucun produit. Enregistrez une première entrée de stock.</div>');
+  h+='<details class="card"><summary><b>Ajouter un médicament au catalogue</b></summary><form data-form="addmed" style="margin-top:10px"><label>Nom générique<input name="g" required></label><label>Marque (optionnel)<input name="b"></label><label>Dosage<input name="s" required></label><label>Forme<input name="f" required placeholder="comprimé, gélule, sirop…"></label><label>Unité de stock<input name="u" required placeholder="boîte, flacon…"></label><button class="btn" type="submit">Ajouter</button><p class="meta">Il restera privé jusqu\'à approbation par un administrateur.</p></form></details>';
+  h+='<h2>Derniers mouvements</h2>'+(d.moves.length?'<div class="wrap"><table><thead><tr><th>Date</th><th>Produit</th><th>Lot</th><th>Type</th><th>Qté</th><th>Solde</th><th>Motif</th><th>Agent</th></tr></thead><tbody>'+d.moves.map(function(m){return'<tr><td>'+new Date(m.created_at).toLocaleString("fr-FR")+'</td><td>'+esc(mname(m))+'</td><td>'+esc(m.batch_number)+'</td><td>'+TYPES[m.movement_type]+'</td><td>'+m.quantity_delta+'</td><td>'+m.balance_after+'</td><td>'+esc(m.reason)+'</td><td>'+esc(m.staff_member)+'</td></tr>'}).join("")+'</tbody></table></div>':'<div class="card">Aucun mouvement.</div>');
+  return h;
+}
+
+function vAdmin(){
+  var a=S.adm;if(!a)return'<p>Chargement…</p>';
+  var h='<h1>Administration</h1>';
+  if(S.msg)h+='<div class="'+S.msg.k+'">'+esc(S.msg.t)+'</div>';
+  h+='<h2>Pharmacies</h2>'+a.ph.map(function(p){return'<div class="card"><b>'+esc(p.name)+'</b>'+(p.is_demo?'<span class="tag">DÉMO</span>':'')+'<br><span class="meta">'+esc(p.neighborhood)+' · '+esc(p.email)+'<br>Autorisation déclarée : '+esc(p.authorization_ref)+'<br>Statut : '+STATUS[p.status]+'</span><div style="margin-top:8px"><button class="btn sm" data-act="pstatus" data-id="'+p.id+'" data-s="verified">Vérifier</button><button class="btn sm alt" data-act="pstatus" data-id="'+p.id+'" data-s="suspended">Suspendre</button></div></div>'}).join("");
+  h+='<h2>Médicaments en attente</h2>'+(a.meds.length?a.meds.map(function(m){return'<div class="card">'+esc(mname(m))+'<br><button class="btn sm" data-act="approvemed" data-id="'+m.id+'">Approuver</button></div>'}).join(""):'<div class="card">Aucun.</div>');
+  return h+'<p class="meta">Les administrateurs ne voient aucun stock privé de pharmacie.</p>';
+}
+
+function render(){
+  var v=S.view;
+  $("nav").innerHTML=[["find","Trouver"],["pro","Espace pharmacie"]].map(function(x){return'<button data-act="nav" data-v="'+x[0]+'" aria-current="'+(v===x[0]||(x[0]==="pro"&&["auth","register","admin"].indexOf(v)>-1))+'">'+x[1]+'</button>'}).join("")+(S.user?'<button data-act="out">Déconnexion</button>':'');
+  $("v").innerHTML=v==="setup"?vSetup():v==="find"?vFind():v==="auth"?vAuth():v==="register"?vReg():v==="admin"?vAdmin():vPro();
+}
+
+/* ---------- data loading ---------- */
+async function goPro(){
+  S.msg=null;
+  if(!S.user){S.view="auth";render();return}
+  S.view="pro";S.d=null;render();
+  var p=await sb.from("profiles").select("full_name,role,pharmacy_id").eq("id",S.user.id).maybeSingle();
+  if(p.error)return say("err",p.error.message);
+  S.prof=p.data;
+  if(!S.prof){S.view="register";render();return}
+  if(S.prof.role==="admin"){S.view="admin";S.adm=null;render();return loadAdmin()}
+  await loadPharmacy();
+}
+async function loadPharmacy(){
+  var q=await Promise.all([
+    sb.from("pharmacies").select("name,status,listing_enabled").eq("id",S.prof.pharmacy_id).single(),
+    sb.from("v_stock_levels").select("*").order("generic_name"),
+    sb.from("v_alerts").select("*"),
+    sb.from("batches").select("id,medicine_id,batch_number,expiry_date,quantity_on_hand").order("expiry_date"),
+    sb.from("medicines").select("id,generic_name,brand_name,strength,dosage_form,approved").order("generic_name"),
+    sb.from("v_movement_report").select("*").order("created_at",{ascending:false}).limit(30),
+    sb.from("pharmacy_products").select("medicine_id,price_xof,show_quantity")]);
+  var bad=q.find(function(r){return r.error});if(bad)return say("err",bad.error.message);
+  S.ph=q[0].data;S.d={stock:q[1].data,alerts:q[2].data,batches:q[3].data,meds:q[4].data,moves:q[5].data,prod:q[6].data};
+  S.view="pro";render();
+}
+async function loadAdmin(){
+  var q=await Promise.all([sb.from("pharmacies").select("id,name,neighborhood,email,authorization_ref,status,is_demo").order("created_at",{ascending:false}),sb.from("medicines").select("*").eq("approved",false)]);
+  var bad=q.find(function(r){return r.error});if(bad)return say("err",bad.error.message);
+  S.adm={ph:q[0].data,meds:q[1].data};render();
+}
+async function act(p,ok){ // run an RPC then reload
+  var r=await p;if(r.error)return say("err",r.error.message);
+  S.msg={k:"good",t:ok};S.view==="admin"?await loadAdmin():await loadPharmacy();
+}
+
+async function submitMove(){
+  var f=S.mf,t=f.type,q=parseInt(f.qty,10),r;
+  if(!f.mid||!q)return say("err","Choisissez un produit et saisissez une quantité.");
+  S.rid=S.rid||crypto.randomUUID();
+  if(t==="receipt"){
+    var b=f.batch==="new"?null:S.d.batches.find(function(x){return x.id===f.batch});
+    if(!b&&(!f.no||!f.exp))return say("err","Indiquez le numéro de lot et la date de péremption.");
+    r=await sb.rpc("receive_stock",{p_medicine_id:f.mid,p_batch_number:b?b.batch_number:f.no,p_expiry_date:b?b.expiry_date:f.exp,p_quantity:q,p_unit_cost_xof:f.cost?parseInt(f.cost,10):null,p_request_id:S.rid});
+  }else{
+    if(!f.batch||f.batch==="new")return say("err","Choisissez un lot.");
+    r=await sb.rpc("record_stock_movement",{p_batch_id:f.batch,p_type:t,p_quantity:q,p_reason:f.reason||null,p_request_id:S.rid});
+  }
+  if(r.error)return say("err",r.error.message); // request id is kept: a retry is applied only once
+  S.rid=null;S.mf.qty="";S.mf.reason="";S.mf.no="";S.mf.exp="";S.mf.cost="";
+  S.msg={k:"good",t:"Mouvement enregistré. La disponibilité publique est recalculée."};await loadPharmacy();
+}
+
+function csvCell(v){var s=String(v==null?"":v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'}
+async function exportCsv(){
+  var r=await sb.from("v_inventory_report").select("*").order("generic_name");
+  if(r.error)return say("err",r.error.message);
+  if(!r.data.length)return say("err","Rien à exporter.");
+  var keys=Object.keys(r.data[0]).filter(function(k){return k!=="pharmacy_id"});
+  var csv="\uFEFF"+[keys.join(",")].concat(r.data.map(function(x){return keys.map(function(k){return csvCell(x[k])}).join(",")})).join("\r\n");
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="inventaire-"+new Date().toISOString().slice(0,10)+".csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",async function(e){
+  var t=e.target.closest("[data-act]");if(!t)return;var a=t.dataset.act;
+  if(a==="nav"){S.msg=null;if(t.dataset.v==="find"){S.view="find";render()}else goPro()}
+  if(a==="register"){S.msg=null;if(!S.user){S.view="auth";render()}else goPro()}
+  if(a==="out"){await sb.auth.signOut();S.user=null;S.prof=null;S.d=null;S.view="find";S.msg=null;render()}
+  if(a==="pick"){var id=t.dataset.mid;S.fs.mid=id;var r=await sb.rpc("public_availability",{p_medicine_id:id,p_neighborhood:S.fs.hood||null});if(r.error)return say("err",r.error.message);S.fs.res=r.data;S.msg=null;render()}
+  if(a==="confirmall")act(sb.rpc("confirm_availability",{}),"Stock confirmé à jour.");
+  if(a==="plist")act(sb.rpc("set_pharmacy_listing",{p_enabled:t.dataset.on==="true"}),"Publication mise à jour.");
+  if(a==="csv")exportCsv();
+  if(a==="saverow"){
+    var mid=t.dataset.mid,row=t.closest("[data-row]"),g=function(k){return row.querySelector('[data-k="'+k+'"]')};
+    var mn=await sb.rpc("set_min_stock",{p_medicine_id:mid,p_min_stock:parseInt(g("min").value,10)||0});
+    if(mn.error)return say("err",mn.error.message);
+    if(S.prof.role==="manager"){
+      var pr=g("price").value;
+      var li=await sb.rpc("set_product_listing",{p_medicine_id:mid,p_public:g("pub").checked,p_show_quantity:g("qty").checked,p_price_xof:pr===""?null:parseInt(pr,10)});
+      if(li.error)return say("err",li.error.message);
+    }
+    S.msg={k:"good",t:"Réglages enregistrés."};await loadPharmacy();
+  }
+  if(a==="pstatus")act(sb.rpc("admin_set_pharmacy_status",{p_pharmacy:t.dataset.id,p_status:t.dataset.s}),"Statut mis à jour.");
+  if(a==="approvemed")act(sb.rpc("admin_approve_medicine",{p_medicine_id:t.dataset.id,p_approved:true}),"Médicament approuvé.");
+});
+document.addEventListener("input",function(e){var t=e.target;if(t.id==="q")S.fs.q=t.value;if(t.dataset.f){S.mf[t.dataset.f]=t.value;S.rid=null}});
+document.addEventListener("change",function(e){
+  var t=e.target,s=t.dataset.sel;
+  if(t.id==="hood")S.fs.hood=t.value;
+  if(s){
+    S.mf[s]=t.value;S.rid=null;S.msg=null;
+    if(s==="mid"||s==="type"){var fb=S.d&&S.d.batches.find(function(b){return b.medicine_id===S.mf.mid});S.mf.batch=S.mf.type==="receipt"?"new":(fb?fb.id:"")}
+    render();
+  }
+});
+document.addEventListener("submit",async function(e){
+  e.preventDefault();var f=e.target.dataset.form,fd=new FormData(e.target),r;
+  if(f==="find"){S.fs.q=$("q").value;S.fs.hood=$("hood").value;S.msg=null;r=await sb.rpc("public_search_medicines",{p_query:S.fs.q});if(r.error)return say("err",r.error.message);S.fs.vars=r.data;S.fs.go=true;S.fs.mid=null;S.fs.res=null;render()}
+  if(f==="auth"){
+    var up=e.submitter&&e.submitter.dataset.m==="up",cred={email:$("em").value,password:$("pw").value};
+    r=up?await sb.auth.signUp(cred):await sb.auth.signInWithPassword(cred);
+    if(r.error)return say("err",r.error.message);
+    if(up&&!r.data.session)return say("good","Compte créé. Confirmez votre adresse e-mail, puis connectez-vous.");
+    S.user=r.data.user;goPro();
+  }
+  if(f==="reg"){
+    r=await sb.rpc("register_pharmacy",{p_name:fd.get("name"),p_address:fd.get("addr"),p_neighborhood:fd.get("hood"),p_phone:fd.get("tel"),p_email:fd.get("mail"),p_opening_hours:fd.get("hrs"),p_authorization_ref:fd.get("auth"),p_full_name:fd.get("full"),p_accept_terms:fd.get("ok")==="on",p_terms_version:C.TERMS_VERSION||"non-configuré"});
+    if(r.error)return say("err",r.error.message);
+    S.msg={k:"good",t:"Demande reçue. Un administrateur doit vérifier votre pharmacie avant toute publication."};goPro();
+  }
+  if(f==="move")submitMove();
+  if(f==="addmed")act(sb.rpc("add_medicine",{p_generic_name:fd.get("g"),p_brand_name:fd.get("b")||"",p_strength:fd.get("s"),p_dosage_form:fd.get("f"),p_stock_unit:fd.get("u")}),"Médicament ajouté (en attente d'approbation).");
+});
+init();
+</script>
+</body>
+</html>
